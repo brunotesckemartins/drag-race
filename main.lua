@@ -3,7 +3,8 @@ local OpponentCar = require('entities.OpponentCar')
 local RaceManager = require('systems.RaceManager')
 local Scenery = require('systems.Scenery')
 
-local playerCar, opponentCar, raceManager, scenery
+local playerCar, raceManager, scenery
+local opponents = {} 
 local gameState = "menu"
 local bigFont
 local defaultFont
@@ -13,35 +14,21 @@ qtePulse = 0
 qtePulseDir = 1
 cameraX = 0
 
-function loadImageSafe(path)
-    local file = io.open(path, "r")
-    if file then
-        file:close()
-        return love.graphics.newImage(path)
-    else
-        print("AVISO: Imagem não encontrada: " .. path)
-        return nil
-    end
-end
-
 function love.load()
     love.graphics.setDefaultFilter("nearest", "nearest")
     
-    -- Carregar imagens
     images = {}
     images.playerCar = love.graphics.newImage("assets/images/player_car.png")
     images.opponentCar = love.graphics.newImage("assets/images/opponent_car.png")
     
-    -- Verificar se carregou
-    if not images.playerCar then
-        print("ERRO: Não foi possível carregar player_car.png")
-    end
-    if not images.opponentCar then
-        print("ERRO: Não foi possível carregar opponent_car.png")
-    end
-    
     playerCar = PlayerCar:new() 
-    opponentCar = OpponentCar:new()
+    
+    opponents = {
+        OpponentCar:new(1),  
+        OpponentCar:new(2),  
+        OpponentCar:new(3)  
+    }
+    
     raceManager = RaceManager:new()
     scenery = Scenery:new()
 
@@ -51,22 +38,24 @@ end
 
 function love.update(dt)
     if cameraShake and cameraShake > 0 then
-        cameraShake = cameraShake * 0.9
-        if cameraShake < 0.1 then cameraShake = 0 end
+        cameraShake = cameraShake - (dt * 15)
+        if cameraShake < 0 then
+            cameraShake = 0
+        end
     else
         cameraShake = 0
     end
-    
+
     if qtePulse then
         qtePulse = qtePulse + (dt * qtePulseDir * 3)
-        if qtePulse > 1 then
+        if qtePulse >= 1 then
             qtePulse = 1
             qtePulseDir = -1
-        elseif qtePulse < 0 then
+        elseif qtePulse <= 0 then
             qtePulse = 0
             qtePulseDir = 1
         end
-    else
+    else 
         qtePulse = 0
         qtePulseDir = 1
     end
@@ -74,7 +63,9 @@ function love.update(dt)
     if gameState == "corrida" then
         if raceManager.raceState == "countdown" then
             playerCar:update(dt)
-            opponentCar:update(dt, playerCar.x)
+            for i, opponent in ipairs(opponents) do
+                opponent:update(dt, playerCar.x)
+            end
             
             if love.keyboard.isDown('space') then
                 playerCar.rpm = playerCar.rpm + (4000 * dt)
@@ -85,10 +76,12 @@ function love.update(dt)
             
         elseif raceManager.raceState == "running" then
             playerCar:update(dt)
-            opponentCar:update(dt, playerCar.x)
+            for i, opponent in ipairs(opponents) do
+                opponent:update(dt, playerCar.x)
+            end
         end
         
-        raceManager:update(dt, playerCar, opponentCar)
+        raceManager:update(dt, playerCar, opponents)
         
         if raceManager.raceState == "finished_player_wins" or raceManager.raceState == "finished_opponent_wins" then
             gameState = "fim"
@@ -99,16 +92,6 @@ function love.update(dt)
 end
 
 function love.draw()
-    love.graphics.push()
-    
-    local shakeX = 0
-    local shakeY = 0
-    if cameraShake and cameraShake > 0 then
-        shakeX = math.random(-cameraShake, cameraShake)
-        shakeY = math.random(-cameraShake, cameraShake)
-    end
-    love.graphics.translate(shakeX, shakeY)
-
     if gameState == "menu" then
         love.graphics.setFont(defaultFont)
         love.graphics.setColor(1, 1, 1)
@@ -116,8 +99,15 @@ function love.draw()
         love.graphics.print("Aperte ENTER para começar", 340, 300)
         
     elseif gameState == "corrida" then
-        love.graphics.setFont(defaultFont)
-        love.graphics.setColor(1, 1, 1)
+        love.graphics.push()
+        local shakeX = 0
+        local shakeY = 0
+        if cameraShake and cameraShake > 0 then
+            shakeX = math.random(-cameraShake, cameraShake)
+            shakeY = math.random(-cameraShake, cameraShake)
+        end
+        
+        love.graphics.translate(shakeX, shakeY)
         
         scenery:drawBackground(cameraX)
         
@@ -126,13 +116,18 @@ function love.draw()
         
         scenery:drawMidground()
         playerCar:drawWorld()
-        opponentCar:drawWorld()
+        for i, opponent in ipairs(opponents) do
+            opponent:drawWorld()
+        end
         raceManager:draw()
         
         love.graphics.pop()
+        love.graphics.pop()  
         
         playerCar:drawUI(raceManager.raceState)
-        opponentCar:drawUI()
+        for i, opponent in ipairs(opponents) do
+            opponent:drawUI(i)
+        end
         
     elseif gameState == "fim" then
         scenery:drawBackground(cameraX)
@@ -146,7 +141,7 @@ function love.draw()
         if raceManager.raceState == "finished_player_wins" then
             text = "VITÓRIA!"
             love.graphics.setColor(0.1, 0.8, 0.1)
-        elseif raceManager.raceState == "finished_opponent_wins" then
+        else
             text = "GAME OVER"
             love.graphics.setColor(0.9, 0.1, 0.1)
         end
@@ -159,8 +154,6 @@ function love.draw()
         
         love.graphics.print("Aperte ENTER para voltar ao Menu", 320, 350)
     end
-    
-    love.graphics.pop()
 end
 
 function love.keypressed(key)
@@ -169,7 +162,11 @@ function love.keypressed(key)
             gameState = "corrida"
             raceManager = RaceManager:new()
             playerCar = PlayerCar:new()
-            opponentCar = OpponentCar:new()
+            opponents = {
+                OpponentCar:new(1),
+                OpponentCar:new(2), 
+                OpponentCar:new(3)
+            }
             cameraX = 0
             cameraShake = 0
             qtePulse = 0
@@ -184,7 +181,11 @@ function love.keypressed(key)
     elseif gameState == "fim" then
         if key == "return" then
             playerCar = PlayerCar:new()
-            opponentCar = OpponentCar:new()
+            opponents = {
+                OpponentCar:new(1),
+                OpponentCar:new(2),
+                OpponentCar:new(3)
+            }
             raceManager = RaceManager:new()
             gameState = "menu"
             cameraX = 0

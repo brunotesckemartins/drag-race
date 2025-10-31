@@ -1,22 +1,29 @@
 local OpponentCar = {}
 OpponentCar.__index = OpponentCar
 
-function OpponentCar:new()
+function OpponentCar:new(index)
     local car = {}
     setmetatable(car, OpponentCar)
 
+    car.index = index or 1 
     car.x = 100
-    car.y = 350
+    car.y = 300 + (index * 40)  
+    
     car.speed = 0
     car.gear = 1
     
     car.rpm = 1000 
     car.max_rpm = 9000
     
-    car.gear_power = { 22, 42, 62, 82, 102 }
+    local powers = {
+        {20, 40, 60, 80, 100},   
+        {22, 42, 62, 82, 102},   
+        {24, 44, 64, 84, 104}    
+    }
+    car.gear_power = powers[index] or {22, 42, 62, 82, 102}
     
     car.shift_point = 7000 + math.random(-500, 500)
-    car.skill = 0.5
+    car.skill = 0.3 + (index * 0.1)  
     
     car.catch_up_active = false
     car.catch_up_timer = 0
@@ -27,7 +34,6 @@ function OpponentCar:new()
     
     return car
 end
-
 function OpponentCar:update(dt, playerX)
     local distance_behind = playerX - self.x
     self.catch_up_active = distance_behind > 80
@@ -94,16 +100,16 @@ function OpponentCar:drawWorld()
     if images and images.opponentCar then
         love.graphics.draw(images.opponentCar, self.x, self.y, 0, 1, 1, 0, 0)
     else
-        -- Fallback
         love.graphics.setColor(0.8, 0.2, 0.2)
         love.graphics.rectangle('fill', self.x, self.y, 90, 30)
         love.graphics.setColor(1, 1, 1)
     end
 end
 
-function OpponentCar:drawUI()
+function OpponentCar:drawUI(index)
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("Oponente: " .. math.floor(self.x), 10, 50)
+    local y_pos = 50 + ((index or self.index) * 20)
+    love.graphics.print("Oponente " .. (index or self.index) .. ": " .. math.floor(self.x), 10, y_pos)
 end
 
 return OpponentCar

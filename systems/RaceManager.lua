@@ -10,13 +10,15 @@ function RaceManager:new()
     return manager
 end
 
-function RaceManager:update(dt, playerCar, opponentCar)
+function RaceManager:update(dt, playerCar, opponents)
     if self.raceState == "countdown" then
         self.countdown = self.countdown - dt
         if self.countdown <= 0 then
             self.raceState = "running"
             playerCar:applyStartBoost()
-            opponentCar:applyStartBoost()
+            for i, opponent in ipairs(opponents) do
+                opponent:applyStartBoost()
+            end
         end
     
     elseif self.raceState == "running" then
@@ -24,8 +26,13 @@ function RaceManager:update(dt, playerCar, opponentCar)
 
         if playerCar.x > finishLine then
             self.raceState = "finished_player_wins"
-        elseif opponentCar.x > finishLine then
-            self.raceState = "finished_opponent_wins"
+        else
+            for i, opponent in ipairs(opponents) do
+                if opponent.x > finishLine then
+                    self.raceState = "finished_opponent_wins"
+                    break
+                end
+            end
         end
     end
 end

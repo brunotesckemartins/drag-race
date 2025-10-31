@@ -126,7 +126,7 @@ end
 
 function PlayerCar:qteSuccess()
     self.qte_active = false
-    cameraShake = 8
+    cameraShake = 1.5
     
     self.comboCounter = self.comboCounter + 1
     local nameIndex = math.min(self.comboCounter, #self.comboNames)
@@ -169,7 +169,7 @@ end
 function PlayerCar:applyStartBoost()
     if self.rpm >= self.start_qte_start and self.rpm <= self.start_qte_end then
         self.speed = 80
-        cameraShake = 10
+        cameraShake = 2
         self.comboMessage = "ARRANCADA PERFEITA!"
         self.comboTimer = 1.5
     elseif self.rpm < self.start_qte_start then
@@ -188,7 +188,6 @@ function PlayerCar:drawWorld()
     if images and images.playerCar then
         love.graphics.draw(images.playerCar, self.x, self.y, 0, 1, 1, 0, 0)
     else
-        -- Fallback
         love.graphics.setColor(0.2, 0.6, 1.0)
         love.graphics.rectangle('fill', self.x, self.y, 60, 30)
         love.graphics.setColor(1, 1, 1)
