@@ -22,6 +22,9 @@ function OpponentCar:new()
     car.catch_up_timer = 0
     car.catch_up_boost = 1.0
     
+    car.exhaustParticles = {}
+    car.exhaustTimer = 0
+    
     return car
 end
 
@@ -88,8 +91,14 @@ function OpponentCar:applyStartBoost()
 end
 
 function OpponentCar:drawWorld()
-    love.graphics.setColor(0.8, 0.2, 0.2)
-    love.graphics.rectangle('fill', self.x, self.y, 100, 50)
+    if images and images.opponentCar then
+        love.graphics.draw(images.opponentCar, self.x, self.y, 0, 1, 1, 0, 0)
+    else
+        -- Fallback
+        love.graphics.setColor(0.8, 0.2, 0.2)
+        love.graphics.rectangle('fill', self.x, self.y, 90, 30)
+        love.graphics.setColor(1, 1, 1)
+    end
 end
 
 function OpponentCar:drawUI()

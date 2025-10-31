@@ -13,7 +13,33 @@ qtePulse = 0
 qtePulseDir = 1
 cameraX = 0
 
+function loadImageSafe(path)
+    local file = io.open(path, "r")
+    if file then
+        file:close()
+        return love.graphics.newImage(path)
+    else
+        print("AVISO: Imagem não encontrada: " .. path)
+        return nil
+    end
+end
+
 function love.load()
+    love.graphics.setDefaultFilter("nearest", "nearest")
+    
+    -- Carregar imagens
+    images = {}
+    images.playerCar = love.graphics.newImage("assets/images/player_car.png")
+    images.opponentCar = love.graphics.newImage("assets/images/opponent_car.png")
+    
+    -- Verificar se carregou
+    if not images.playerCar then
+        print("ERRO: Não foi possível carregar player_car.png")
+    end
+    if not images.opponentCar then
+        print("ERRO: Não foi possível carregar opponent_car.png")
+    end
+    
     playerCar = PlayerCar:new() 
     opponentCar = OpponentCar:new()
     raceManager = RaceManager:new()

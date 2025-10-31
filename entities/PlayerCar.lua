@@ -32,6 +32,11 @@ function PlayerCar:new()
     car.comboNames = { "BOM!", "ÓTIMO!", "PERFEITO!", "INCRÍVEL!", "DIVINO!" }
     car.comboFont = love.graphics.newFont(24)
     
+    car.engineGlow = 0
+    car.wheelRotation = 0
+    car.exhaustParticles = {}
+    car.exhaustTimer = 0
+    
     return car
 end
 
@@ -58,10 +63,42 @@ function PlayerCar:update(dt)
         self:updateQTE(dt)
     end
     
+    self:updateVisualEffects(dt)
+    
     if self.comboTimer > 0 then
         self.comboTimer = self.comboTimer - dt
         if self.comboTimer <= 0 then
             self.comboMessage = ""
+        end
+    end
+end
+
+function PlayerCar:updateVisualEffects(dt)
+    self.engineGlow = math.min(1.0, self.rpm / self.max_rpm * 1.5)
+    
+    self.wheelRotation = self.wheelRotation + (self.speed * 0.1)
+    
+    self.exhaustTimer = self.exhaustTimer + dt
+    if self.exhaustTimer > 0.05 then
+        self.exhaustTimer = 0
+        table.insert(self.exhaustParticles, {
+            x = self.x - 10,
+            y = self.y + 25,
+            life = 1.0,
+            size = math.random(3, 8),
+            speedX = -math.random(20, 40),
+            speedY = math.random(-5, 5)
+        })
+    end
+    
+    for i = #self.exhaustParticles, 1, -1 do
+        local p = self.exhaustParticles[i]
+        p.x = p.x + p.speedX * dt
+        p.y = p.y + p.speedY * dt
+        p.life = p.life - dt * 2
+        
+        if p.life <= 0 then
+            table.remove(self.exhaustParticles, i)
         end
     end
 end
@@ -148,44 +185,67 @@ function PlayerCar:applyStartBoost()
 end
 
 function PlayerCar:drawWorld()
+    if images and images.playerCar then
+        love.graphics.draw(images.playerCar, self.x, self.y, 0, 1, 1, 0, 0)
+    else
+        -- Fallback
+        love.graphics.setColor(0.2, 0.6, 1.0)
+        love.graphics.rectangle('fill', self.x, self.y, 60, 30)
+        love.graphics.setColor(1, 1, 1)
+    end
+    
+    for _, p in ipairs(self.exhaustParticles) do
+        local alpha = p.life * 0.8
+        love.graphics.setColor(0.8, 0.8, 0.2, alpha)
+        love.graphics.circle('fill', p.x, p.y, p.size * p.life)
+    end
     love.graphics.setColor(1, 1, 1)
-    love.graphics.rectangle('fill', self.x, self.y, 100, 50)
 end
 
 function PlayerCar:drawUI(raceState)
-    love.graphics.print("Marcha: " .. self.gear .. "/" .. #self.gear_power, 10, 450)
-    love.graphics.print("Velocidade: " .. math.floor(self.speed), 10, 470)
-    love.graphics.print("Combo: x" .. self.comboCounter, 10, 490)
+    love.graphics.setColor(0, 0, 0, 0.7)
+    love.graphics.rectangle('fill', 5, 515, 790, 80, 10)
     
-    love.graphics.setColor(0.3, 0.3, 0.3)
-    love.graphics.rectangle('fill', 150, 520, 500, 40)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("MARCHA: " .. self.gear .. "/" .. #self.gear_power, 20, 530)
+    love.graphics.print("VELOCIDADE: " .. math.floor(self.speed) .. " km/h", 20, 550)
+    love.graphics.print("COMBO: x" .. self.comboCounter, 20, 570)
     
     local rpm_percent = self.rpm / self.max_rpm
-    love.graphics.setColor(1, 0.2, 0.2)
-    love.graphics.rectangle('fill', 150 + (rpm_percent * 500) - 2, 515, 4, 50)
+    love.graphics.setColor(0.3, 0.3, 0.3)
+    love.graphics.rectangle('fill', 200, 540, 400, 20, 3)
+    
+    if rpm_percent < 0.7 then
+        love.graphics.setColor(0, 0.8, 0)
+    elseif rpm_percent < 0.9 then
+        love.graphics.setColor(1, 0.8, 0)
+    else
+        love.graphics.setColor(1, 0, 0)
+    end
+    love.graphics.rectangle('fill', 200, 540, rpm_percent * 400, 20, 3)
     
     if self.qte_active then
-        local qte_x = 300
-        local qte_y = 100
+        love.graphics.setColor(0, 0, 0, 0.9)
+        love.graphics.rectangle('fill', 200, 150, 400, 100, 10)
         
-        love.graphics.setColor(0.2, 0.2, 0.2)
-        love.graphics.rectangle('fill', qte_x, qte_y, 200, 30)
+        love.graphics.setColor(0.4, 0.4, 0.4)
+        love.graphics.rectangle('fill', 220, 180, 360, 30, 5)
         
-        local zone_x = qte_x + (self.qte_zone_start * 200)
-        local zone_width = (self.qte_zone_end - self.qte_zone_start) * 200
-        love.graphics.setColor(0, 0.8, 0)
-        love.graphics.rectangle('fill', zone_x, qte_y, zone_width, 30)
+        local zone_x = 220 + (self.qte_zone_start * 360)
+        local zone_width = (self.qte_zone_end - self.qte_zone_start) * 360
+        love.graphics.setColor(0, 1, 0, 0.6)
+        love.graphics.rectangle('fill', zone_x, 180, zone_width, 30, 3)
         
-        local indicator_x = qte_x + (self.qte_progress * 200) - 3
+        local indicator_x = 220 + (self.qte_progress * 360)
         love.graphics.setColor(1, 1, 0)
-        love.graphics.rectangle('fill', indicator_x, qte_y - 10, 6, 50)
+        love.graphics.rectangle('fill', indicator_x - 2, 170, 4, 40)
         
         love.graphics.setColor(1, 1, 1)
-        love.graphics.print("ESPACO AGORA!", qte_x + 50, qte_y + 35)
+        love.graphics.print("PRESSIONE [ESPAÇO] AGORA!", 250, 155)
         
         local time_left = 1 - self.qte_progress
         love.graphics.setColor(1, 0.5, 0)
-        love.graphics.rectangle('fill', qte_x, qte_y + 60, time_left * 200, 5)
+        love.graphics.rectangle('fill', 220, 215, time_left * 360, 4)
     end
     
     love.graphics.setColor(1, 1, 1)
@@ -196,10 +256,11 @@ function PlayerCar:drawUI(raceState)
         
         local r, g, b = 1, 1, 0.4
         if self.comboCounter >= 3 then r, g, b = 0, 1, 0 end
-        if self.comboCounter >= 5 then r, g, b = 1, 0, 1 end
+        if self.comboCounter >= 5 then r, g, b = 1, 0.5, 1 end
         
         love.graphics.setColor(r, g, b) 
-        love.graphics.print(self.comboMessage, 10, 10)
+        local textWidth = self.comboFont:getWidth(self.comboMessage)
+        love.graphics.print(self.comboMessage, (love.graphics.getWidth() - textWidth) / 2, 50)
         love.graphics.pop() 
     end
 end
