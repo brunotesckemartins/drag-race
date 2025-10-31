@@ -15,18 +15,17 @@ function RaceManager:update(dt, playerCar, opponentCar)
         self.countdown = self.countdown - dt
         if self.countdown <= 0 then
             self.raceState = "running"
+            playerCar:applyStartBoost()
+            opponentCar:applyStartBoost()
         end
     
     elseif self.raceState == "running" then
-        local finishLine = 3000 
+        local finishLine = 2000
 
         if playerCar.x > finishLine then
             self.raceState = "finished_player_wins"
-            print("Jogador Venceu!")
-
         elseif opponentCar.x > finishLine then
             self.raceState = "finished_opponent_wins"
-            print("Oponente Venceu!")
         end
     end
 end
@@ -39,7 +38,6 @@ function RaceManager:draw()
     elseif self.raceState == "running" then
         love.graphics.print("GO!", 400, 300)
     end
-
 end
 
 return RaceManager
