@@ -81,9 +81,13 @@ function PlayerCar:updateVisualEffects(dt)
     self.exhaustTimer = self.exhaustTimer + dt
     if self.exhaustTimer > 0.05 then
         self.exhaustTimer = 0
+
+        local exhaustX = self.x - 5   
+        local exhaustY = self.y + 8   
+        
         table.insert(self.exhaustParticles, {
-            x = self.x - 10,
-            y = self.y + 25,
+            x = exhaustX,
+            y = exhaustY,
             life = 1.0,
             size = math.random(3, 8),
             speedX = -math.random(20, 40),
@@ -126,7 +130,7 @@ end
 
 function PlayerCar:qteSuccess()
     self.qte_active = false
-    cameraShake = 1.5
+    cameraShake = 3
     
     self.comboCounter = self.comboCounter + 1
     local nameIndex = math.min(self.comboCounter, #self.comboNames)

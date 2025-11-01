@@ -20,6 +20,7 @@ function love.load()
     images = {}
     images.playerCar = love.graphics.newImage("assets/images/player_car.png")
     images.opponentCar = love.graphics.newImage("assets/images/opponent_car.png")
+    images.background = love.graphics.newImage("assets/images/background.png")
     
     playerCar = PlayerCar:new() 
     
