@@ -57,12 +57,16 @@ function Scenery:drawBackground(cameraX)
     end
 end
 
-function Scenery:drawMidground()
-    love.graphics.setColor(0.2, 0.2, 0.25)
-    love.graphics.rectangle('fill', 0, self.trackY, 4000, self.trackHeight)
+
+function Scenery:drawMidground(finishLine)
+    local roadLength = finishLine or 8000 
+
+    love.graphics.setColor(0.4, 0.4, 0.5)  
+    
+    love.graphics.rectangle('fill', 0, self.trackY, roadLength, self.trackHeight) 
     
     love.graphics.setColor(1, 1, 1)
-    for i = 0, 4000, 100 do
+    for i = 0, roadLength, 100 do 
         love.graphics.rectangle('fill', i, self.trackY + (self.trackHeight / 2) - 1, 50, 2)
     end
 end

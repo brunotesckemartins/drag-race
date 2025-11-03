@@ -7,6 +7,9 @@ function RaceManager:new()
     manager.countdown = 3
     manager.raceState = "countdown" 
     manager.timer = 0
+    
+    manager.finishLine = 10000  
+    
     return manager
 end
 
@@ -22,13 +25,13 @@ function RaceManager:update(dt, playerCar, opponents)
         end
     
     elseif self.raceState == "running" then
-        local finishLine = 2000
 
-        if playerCar.x > finishLine then
+
+        if playerCar.x > self.finishLine then 
             self.raceState = "finished_player_wins"
         else
             for i, opponent in ipairs(opponents) do
-                if opponent.x > finishLine then
+                if opponent.x > self.finishLine then 
                     self.raceState = "finished_opponent_wins"
                     break
                 end

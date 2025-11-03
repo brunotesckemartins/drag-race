@@ -14,8 +14,25 @@ qtePulse = 0
 qtePulseDir = 1
 cameraX = 0
 
+local crtShader
+local mainCanvas
+local gameWidth, gameHeight
+
 function love.load()
     love.graphics.setDefaultFilter("nearest", "nearest")
+
+    gameWidth = love.graphics.getWidth()
+    gameHeight = love.graphics.getHeight()
+
+    local success, err = pcall(function()
+        crtShader = love.graphics.newShader("crt.glsl")
+    end)
+    if not success then
+        love.window.setTitle("ERRO NO SHADER: " .. tostring(err))
+    end
+    
+    mainCanvas = love.graphics.newCanvas(gameWidth, gameHeight)
+    mainCanvas:setFilter("nearest", "nearest") 
     
     images = {}
     images.playerCar = love.graphics.newImage("assets/images/player_car.png")
@@ -93,6 +110,11 @@ function love.update(dt)
 end
 
 function love.draw()
+
+    love.graphics.setCanvas(mainCanvas)
+    love.graphics.clear() 
+
+
     if gameState == "menu" then
         love.graphics.setFont(defaultFont)
         love.graphics.setColor(1, 1, 1)
@@ -115,7 +137,7 @@ function love.draw()
         love.graphics.push()
         love.graphics.translate(-cameraX, 0)
         
-        scenery:drawMidground()
+        scenery:drawMidground(raceManager.finishLine)
         playerCar:drawWorld()
         for i, opponent in ipairs(opponents) do
             opponent:drawWorld()
@@ -129,9 +151,26 @@ function love.draw()
         for i, opponent in ipairs(opponents) do
             opponent:drawUI(i)
         end
-        
+
+
     elseif gameState == "fim" then
-        scenery:drawBackground(cameraX)
+        love.graphics.push()
+        love.graphics.translate(0, 0)
+        
+        scenery:drawBackground(cameraX) 
+
+        love.graphics.push() 
+        love.graphics.translate(-cameraX, 0) 
+        
+        scenery:drawMidground(raceManager.finishLine) 
+        playerCar:drawWorld() 
+        for i, opponent in ipairs(opponents) do 
+            opponent:drawWorld() 
+        end
+        raceManager:draw() 
+        
+        love.graphics.pop() 
+        love.graphics.pop() 
         
         love.graphics.push() 
         love.graphics.setFont(bigFont)
@@ -154,7 +193,20 @@ function love.draw()
         love.graphics.setColor(1, 1, 1)
         
         love.graphics.print("Aperte ENTER para voltar ao Menu", 320, 350)
+
+
     end
+
+    love.graphics.setCanvas()
+
+    if crtShader then
+        love.graphics.setShader(crtShader)
+    end
+
+    love.graphics.setColor(1, 1, 1) 
+    love.graphics.draw(mainCanvas, 0, 0)
+
+    love.graphics.setShader()
 end
 
 function love.keypressed(key)

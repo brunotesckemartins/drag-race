@@ -16,11 +16,11 @@ function OpponentCar:new(index)
     car.max_rpm = 9000
     
     local powers = {
-        {20, 40, 60, 80, 100},   
-        {22, 42, 62, 82, 102},   
-        {24, 44, 64, 84, 104}    
+        {15, 30, 45, 60, 75},   
+        {18, 33, 48, 63, 78},   
+        {20, 35, 50, 65, 80}    
     }
-    car.gear_power = powers[index] or {22, 42, 62, 82, 102}
+    car.gear_power = powers[index] or {18, 33, 48, 63, 78}
     
     car.shift_point = 7000 + math.random(-500, 500)
     car.skill = 0.3 + (index * 0.1)  
@@ -34,21 +34,8 @@ function OpponentCar:new(index)
     
     return car
 end
+
 function OpponentCar:update(dt, playerX)
-    local distance_behind = playerX - self.x
-    self.catch_up_active = distance_behind > 80
-    
-    if self.catch_up_active then
-        self.catch_up_timer = self.catch_up_timer + dt
-        if self.catch_up_timer >= 4 then
-            self.catch_up_timer = 0
-            self.catch_up_boost = 1.08
-            self.speed = self.speed * self.catch_up_boost
-        end
-    else
-        self.catch_up_timer = 0
-        self.catch_up_boost = 1.0
-    end
     
     if self.rpm > self.max_rpm then
         if self.gear == #self.gear_power then 
@@ -58,8 +45,7 @@ function OpponentCar:update(dt, playerX)
         end
     else
         local power = self.gear_power[self.gear] or 15 
-        power = power * self.catch_up_boost
-        
+        -- SEM CATCH-UP BOOST
         self.speed = self.speed + (power * dt)
         self.rpm = self.rpm + (2200 + (self.speed * 3)) * dt
     end
@@ -77,9 +63,9 @@ function OpponentCar:shiftGear()
     if self.gear >= #self.gear_power then return end
 
     if math.random() < self.skill then
-        self.speed = self.speed * 1.06
+        self.speed = self.speed * 1.04
     else
-        self.speed = self.speed * 0.94
+        self.speed = self.speed * 0.96
     end
 
     self.gear = self.gear + 1

@@ -13,7 +13,7 @@ function PlayerCar:new()
     car.rpm = 1000 
     car.max_rpm = 9000
     
-    car.gear_power = { 40, 70, 100, 130, 160 }
+    car.gear_power = { 30, 55, 80, 105, 130, 155, 170 }
     
     car.qte_active = false
     car.qte_progress = 0
@@ -21,6 +21,9 @@ function PlayerCar:new()
     car.qte_zone_start = 0.3
     car.qte_zone_end = 0.7
     car.qte_size = 80
+
+    car.firstQTEready = false
+    car.firstQTEtimer = 0
     
     car.start_qte_start = 3500
     car.start_qte_end = 4500
@@ -36,18 +39,16 @@ function PlayerCar:new()
     car.wheelRotation = 0
     car.exhaustParticles = {}
     car.exhaustTimer = 0
+    car.timeInGear = 0
     
     return car
 end
 
+
 function PlayerCar:update(dt)
     if self.rpm > self.max_rpm then
-        if self.gear == #self.gear_power then 
-            self.rpm = self.max_rpm 
-        else
-            self.speed = self.speed * 0.95
-        end
-        
+
+        self.rpm = self.max_rpm         
     else
         local power = self.gear_power[self.gear] or 15 
         self.speed = self.speed + (power * dt)
@@ -59,6 +60,8 @@ function PlayerCar:update(dt)
 
     self.x = self.x + self.speed * dt
     
+    self.timeInGear = self.timeInGear + dt 
+
     if self.gear < #self.gear_power then
         self:updateQTE(dt)
     end
@@ -108,7 +111,10 @@ function PlayerCar:updateVisualEffects(dt)
 end
 
 function PlayerCar:updateQTE(dt)
-    if not self.qte_active and self.rpm > 6000 and math.random() < 0.03 then
+    local minTime = 3.0 
+    local rpmThreshold = 7500 
+    
+    if not self.qte_active and self.rpm > rpmThreshold and self.timeInGear > minTime and math.random() < 0.1 then
         self.qte_active = true
         self.qte_progress = 0
     end
@@ -130,7 +136,6 @@ end
 
 function PlayerCar:qteSuccess()
     self.qte_active = false
-    cameraShake = 3
     
     self.comboCounter = self.comboCounter + 1
     local nameIndex = math.min(self.comboCounter, #self.comboNames)
@@ -139,16 +144,17 @@ function PlayerCar:qteSuccess()
     self.comboMessage = hypeWord .. " (x" .. self.comboCounter .. ")"
     self.comboTimer = 1.5
     
-    local bonus = 1.2 + (self.comboCounter * 0.1)
+    local bonus = 1.15 + (self.comboCounter * 0.05)  
     self.speed = self.speed * bonus
     
     self.gear = math.min(self.gear + 1, #self.gear_power)
     self.rpm = 2500
+    self.timeInGear = 0
 end
 
 function PlayerCar:qteFailed()
     self.qte_active = false
-    self.speed = self.speed * 0.92
+    self.speed = self.speed * 0.98  
     self.comboMessage = "ERROU!"
     self.comboTimer = 0.8
     self.comboCounter = 0
@@ -164,9 +170,11 @@ function PlayerCar:shiftGear()
             self:qteFailed()
         end
     else
-        self.speed = self.speed * 0.96
+        self.speed = self.speed * 0.98
         self.comboMessage = "AGUARDE QTE!"
-        self.comboTimer = 0.5
+        self.comboTimer = 0.8
+        self.comboCounter = 0
+        self.timeInGear = 0
     end
 end
 
