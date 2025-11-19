@@ -8,6 +8,7 @@ local opponents = {}
 local gameState = "menu"
 local bigFont
 local defaultFont
+local sounds = {} 
 
 cameraShake = 0
 qtePulse = 0
@@ -24,21 +25,46 @@ function love.load()
     gameWidth = love.graphics.getWidth()
     gameHeight = love.graphics.getHeight()
 
-    local success, err = pcall(function()
+    local shaderStatus, shaderErr = pcall(function()
         crtShader = love.graphics.newShader("crt.glsl")
     end)
-    if not success then
-        love.window.setTitle("ERRO NO SHADER: " .. tostring(err))
+    if not shaderStatus then
+        print("Erro no Shader: " .. tostring(shaderErr))
     end
     
     mainCanvas = love.graphics.newCanvas(gameWidth, gameHeight)
-    mainCanvas:setFilter("nearest", "nearest") 
-    
+    mainCanvas:setFilter("nearest", "nearest")
+
     images = {}
-    images.playerCar = love.graphics.newImage("assets/images/player_car.png")
-    images.opponentCar = love.graphics.newImage("assets/images/opponent_car.png")
-    images.background = love.graphics.newImage("assets/images/background.png")
+    pcall(function()
+        images.playerCar = love.graphics.newImage("assets/images/player_car.png")
+        images.opponentCar = love.graphics.newImage("assets/images/opponent_car.png")
+        images.background = love.graphics.newImage("assets/images/background.png")
+    end)
     
+    sounds = {}
+    
+    local function loadAudio(path, type)
+        if love.filesystem.getInfo(path) then
+            local src = love.audio.newSource(path, type or "stream")
+            return src
+        else
+            print("AVISO: Arquivo de audio nao encontrado: " .. path)
+            return nil
+        end
+    end
+
+    sounds.menu = loadAudio("assets/audio/menu.ogg", "stream")
+    sounds.race = loadAudio("assets/audio/race.ogg", "stream")
+    
+    sounds.engine = loadAudio("assets/audio/engine.mp3", "static")
+    sounds.shift = loadAudio("assets/audio/shift.mp3", "static")
+
+    -- Configurações de Loop
+    if sounds.menu then sounds.menu:setLooping(true) end
+    if sounds.race then sounds.race:setLooping(true) end
+    if sounds.engine then sounds.engine:setLooping(true) end 
+
     playerCar = PlayerCar:new() 
     
     opponents = {
@@ -52,14 +78,14 @@ function love.load()
 
     defaultFont = love.graphics.getFont()
     bigFont = love.graphics.newFont(48)
+
+    if sounds.menu then sounds.menu:play() end
 end
 
 function love.update(dt)
     if cameraShake and cameraShake > 0 then
         cameraShake = cameraShake - (dt * 15)
-        if cameraShake < 0 then
-            cameraShake = 0
-        end
+        if cameraShake < 0 then cameraShake = 0 end
     else
         cameraShake = 0
     end
@@ -79,6 +105,15 @@ function love.update(dt)
     end
 
     if gameState == "corrida" then
+        if sounds.engine then
+            local minPitch = 0.5
+            local maxPitch = 2.2
+            local rpmPercent = playerCar.rpm / playerCar.max_rpm
+            
+            local currentPitch = minPitch + (rpmPercent * (maxPitch - minPitch))
+            sounds.engine:setPitch(currentPitch)
+        end
+
         if raceManager.raceState == "countdown" then
             playerCar:update(dt)
             for i, opponent in ipairs(opponents) do
@@ -102,6 +137,9 @@ function love.update(dt)
         raceManager:update(dt, playerCar, opponents)
         
         if raceManager.raceState == "finished_player_wins" or raceManager.raceState == "finished_opponent_wins" then
+            if sounds.race then sounds.race:stop() end
+            if sounds.engine then sounds.engine:stop() end
+            
             gameState = "fim"
         end
         
@@ -110,16 +148,17 @@ function love.update(dt)
 end
 
 function love.draw()
-
     love.graphics.setCanvas(mainCanvas)
     love.graphics.clear() 
-
 
     if gameState == "menu" then
         love.graphics.setFont(defaultFont)
         love.graphics.setColor(1, 1, 1)
         love.graphics.print("DRAG RACE", 380, 250)
         love.graphics.print("Aperte ENTER para começar", 340, 300)
+        
+        love.graphics.setColor(0.6, 0.6, 0.6)
+        love.graphics.print("Music by DavidKBD (itch.io)", 10, gameHeight - 30)
         
     elseif gameState == "corrida" then
         love.graphics.push()
@@ -151,26 +190,25 @@ function love.draw()
         for i, opponent in ipairs(opponents) do
             opponent:drawUI(i)
         end
-
-
+        
     elseif gameState == "fim" then
         love.graphics.push()
-        love.graphics.translate(0, 0)
+        love.graphics.translate(0, 0) 
         
-        scenery:drawBackground(cameraX) 
-
-        love.graphics.push() 
-        love.graphics.translate(-cameraX, 0) 
+        scenery:drawBackground(cameraX)
         
-        scenery:drawMidground(raceManager.finishLine) 
-        playerCar:drawWorld() 
-        for i, opponent in ipairs(opponents) do 
-            opponent:drawWorld() 
+        love.graphics.push()
+        love.graphics.translate(-cameraX, 0)
+        
+        scenery:drawMidground(raceManager.finishLine)
+        playerCar:drawWorld()
+        for i, opponent in ipairs(opponents) do
+            opponent:drawWorld()
         end
-        raceManager:draw() 
+        raceManager:draw()
         
-        love.graphics.pop() 
-        love.graphics.pop() 
+        love.graphics.pop()
+        love.graphics.pop()
         
         love.graphics.push() 
         love.graphics.setFont(bigFont)
@@ -193,25 +231,25 @@ function love.draw()
         love.graphics.setColor(1, 1, 1)
         
         love.graphics.print("Aperte ENTER para voltar ao Menu", 320, 350)
-
-
     end
 
     love.graphics.setCanvas()
-
-    if crtShader then
-        love.graphics.setShader(crtShader)
-    end
-
-    love.graphics.setColor(1, 1, 1) 
+    if crtShader then love.graphics.setShader(crtShader) end
+    
+    love.graphics.setColor(1, 1, 1)
     love.graphics.draw(mainCanvas, 0, 0)
-
+    
     love.graphics.setShader()
 end
 
 function love.keypressed(key)
     if gameState == "menu" then
         if key == "return" then
+            -- Troca música e liga motor
+            if sounds.menu then sounds.menu:stop() end
+            if sounds.race then sounds.race:play() end
+            if sounds.engine then sounds.engine:play() end
+            
             gameState = "corrida"
             raceManager = RaceManager:new()
             playerCar = PlayerCar:new()
@@ -229,10 +267,17 @@ function love.keypressed(key)
     elseif gameState == "corrida" then
         if key == 'space' and raceManager.raceState == "running" then
             playerCar:shiftGear()
+            
+            if sounds.shift then
+                sounds.shift:stop() 
+                sounds.shift:play()
+            end
         end
         
     elseif gameState == "fim" then
         if key == "return" then
+            if sounds.menu then sounds.menu:play() end
+            
             playerCar = PlayerCar:new()
             opponents = {
                 OpponentCar:new(1),
