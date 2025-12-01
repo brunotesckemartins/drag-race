@@ -49,7 +49,6 @@ function love.load()
             local src = love.audio.newSource(path, type or "stream")
             return src
         else
-            print("AVISO: Arquivo de audio nao encontrado: " .. path)
             return nil
         end
     end
@@ -185,7 +184,12 @@ function love.draw()
         love.graphics.pop()
         love.graphics.pop()  
         
+        love.graphics.setFont(defaultFont)
+        
         playerCar:drawUI(raceManager.raceState)
+
+        love.graphics.setFont(defaultFont)
+        
         for i, opponent in ipairs(opponents) do
             opponent:drawUI(i)
         end
@@ -209,7 +213,9 @@ function love.draw()
         love.graphics.pop()
         love.graphics.pop()
         
-        love.graphics.push() 
+        love.graphics.setColor(0, 0, 0, 0.7)
+        love.graphics.rectangle("fill", 0, 200, gameWidth, 250)
+
         love.graphics.setFont(bigFont)
         
         local text = ""
@@ -224,12 +230,15 @@ function love.draw()
         end
 
         textWidth = bigFont:getWidth(text)
-        love.graphics.print(text, (love.graphics.getWidth() / 2) - (textWidth / 2), 250)
+        love.graphics.print(text, (gameWidth / 2) - (textWidth / 2), 250)
         
-        love.graphics.pop() 
+        love.graphics.setFont(defaultFont)
         love.graphics.setColor(1, 1, 1)
         
-        love.graphics.print("Aperte ENTER para voltar ao Menu", 320, 350)
+        local menuText = "Aperte ENTER para voltar ao Menu"
+        local menuWidth = defaultFont:getWidth(menuText)
+        
+        love.graphics.print(menuText, (gameWidth / 2) - (menuWidth / 2), 350)
     end
 
     love.graphics.setCanvas()

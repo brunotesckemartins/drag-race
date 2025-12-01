@@ -94,7 +94,10 @@ end
 function OpponentCar:drawUI(index)
     love.graphics.setColor(1, 1, 1)
     local y_pos = 50 + ((index or self.index) * 20)
-    love.graphics.print("Oponente " .. (index or self.index) .. ": " .. math.floor(self.x), 10, y_pos)
+    
+    local visualSpeed = math.floor(self.speed / 4)
+    
+    love.graphics.print("Oponente " .. (index or self.index) .. ": " .. visualSpeed .. " km/h", 10, y_pos)
 end
 
 return OpponentCar

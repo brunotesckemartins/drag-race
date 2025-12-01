@@ -44,10 +44,8 @@ function PlayerCar:new()
     return car
 end
 
-
 function PlayerCar:update(dt)
     if self.rpm > self.max_rpm then
-
         self.rpm = self.max_rpm         
     else
         local power = self.gear_power[self.gear] or 15 
@@ -219,7 +217,9 @@ function PlayerCar:drawUI(raceState)
     
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("MARCHA: " .. self.gear .. "/" .. #self.gear_power, 20, 530)
-    love.graphics.print("VELOCIDADE: " .. math.floor(self.speed) .. " km/h", 20, 550)
+    
+    local visualSpeed = math.floor(self.speed / 4)
+    love.graphics.print("VELOCIDADE: " .. visualSpeed .. " km/h", 20, 550)
     love.graphics.print("COMBO: x" .. self.comboCounter, 20, 570)
     
     local rpm_percent = self.rpm / self.max_rpm
