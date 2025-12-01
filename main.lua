@@ -60,7 +60,6 @@ function love.load()
     sounds.engine = loadAudio("assets/audio/engine.mp3", "static")
     sounds.shift = loadAudio("assets/audio/shift.mp3", "static")
 
-    -- Configurações de Loop
     if sounds.menu then sounds.menu:setLooping(true) end
     if sounds.race then sounds.race:setLooping(true) end
     if sounds.engine then sounds.engine:setLooping(true) end 
@@ -245,7 +244,6 @@ end
 function love.keypressed(key)
     if gameState == "menu" then
         if key == "return" then
-            -- Troca música e liga motor
             if sounds.menu then sounds.menu:stop() end
             if sounds.race then sounds.race:play() end
             if sounds.engine then sounds.engine:play() end

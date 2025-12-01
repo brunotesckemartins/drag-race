@@ -45,7 +45,6 @@ function OpponentCar:update(dt, playerX)
         end
     else
         local power = self.gear_power[self.gear] or 15 
-        -- SEM CATCH-UP BOOST
         self.speed = self.speed + (power * dt)
         self.rpm = self.rpm + (2200 + (self.speed * 3)) * dt
     end
